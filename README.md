@@ -53,7 +53,7 @@
 
 ![all-student-name CLI after](screenshots/all-student-name-after-cli.png)
 
-
+---
 
 ### Endpoint `/highest-gpa`
 
