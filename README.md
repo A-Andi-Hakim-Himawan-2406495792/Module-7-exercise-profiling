@@ -1,8 +1,4 @@
 # Module 7 - Profiling
-
-## Nama: Andi Hakim Himawan
-## NPM: 2406495792
-
 ---
 
 ## Performance Testing dengan JMeter
