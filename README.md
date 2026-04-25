@@ -88,7 +88,7 @@
 
 ### Endpoint `/all-student`
 
-Berdasarkan hasil profiling menggunakan IntelliJ Profiler, method yang paling banyak mengonsumsi resource adalah **`getAllStudentsWithCourses`**. Method ini mengalami masalah **N+1 Query Problem** — untuk setiap student dilakukan satu query tambahan ke tabel `student_courses`, sehingga total query yang dijalankan = jumlah student + 1. Dengan 1000 student, terjadi 1001 query ke database.
+Berdasarkan hasil profiling menggunakan IntelliJ Profiler, method yang paling banyak mengonsumsi resource adalah **`getAllStudentsWithCourses`**. Method ini mengalami masalah **N+1 Query Problem** untuk setiap student dilakukan satu query tambahan ke tabel `student_courses`, sehingga total query yang dijalankan = jumlah student + 1. Dengan 1000 student, terjadi 1001 query ke database.
 
 Solusi: mengganti looping query dengan satu JOIN FETCH query menggunakan `@Query` di `StudentCourseRepository`.
 
@@ -96,10 +96,18 @@ Solusi: mengganti looping query dengan satu JOIN FETCH query menggunakan `@Query
 
 ### Endpoint `/all-student-name`
 
-Method `joinStudentNames` mengambil seluruh objek Student ke memory lalu melakukan string concatenation menggunakan `+=` di dalam loop. Ini sangat boros memori karena setiap iterasi membuat objek String baru.
+Method `joinStudentNames` sebelumnya mengambil seluruh objek `Student` ke dalam memori, lalu melakukan penggabungan string menggunakan operator `+=` di dalam loop. Pendekatan ini tidak efisien karena setiap iterasi akan membuat objek `String` baru, sehingga boros memori.
 
-Solusi: mengambil hanya kolom nama langsung dari database menggunakan `@Query("SELECT s.name FROM Student s")` dan menggabungkannya dengan `String.join()`.
-Endpoint ini sudah sangat cepat sejak awal karena hanya mengambil satu kolom (nama), sehingga improvement tidak terlalu signifikan pada pengukuran JMeter. Namun secara kode, penggunaan memori jauh lebih efisien karena tidak lagi membuat objek String baru di setiap iterasi."
+Sebagai perbaikan, data yang diambil dari database dibatasi hanya pada kolom nama menggunakan query:
+
+```java
+@Query("SELECT s.name FROM Student s")
+```
+
+Hasilnya kemudian digabungkan menggunakan `String.join()`, yang lebih efisien dalam pengelolaan memori.
+
+Meskipun endpoint ini sejak awal sudah cukup cepat karena hanya berfokus pada satu kolom, peningkatan performa tidak terlalu terlihat pada hasil pengukuran menggunakan JMeter. Namun, dari sisi kualitas kode dan efisiensi memori, pendekatan baru ini jauh lebih optimal karena menghindari pembuatan objek `String` berulang di setiap iterasi.
+
 ---
 
 ### Endpoint `/highest-gpa`
@@ -114,9 +122,9 @@ Solusi: menggunakan derived query `findFirstByOrderByGpaDesc()` yang langsung me
 
 **1. Apa perbedaan pendekatan performance testing dengan JMeter dan profiling dengan IntelliJ Profiler dalam konteks optimasi performa aplikasi?**
 
-JMeter melakukan performance testing dari sisi **luar** aplikasi — mensimulasikan banyak user yang menghit endpoint secara bersamaan dan mengukur response time serta throughput. Hasilnya berupa metrik seperti sample time dan error rate, namun tidak menjelaskan *mengapa* aplikasi lambat.
+JMeter melakukan performance testing dari sisi **luar** aplikasi yang mensimulasikan banyak user yang menghit endpoint secara bersamaan dan mengukur response time serta throughput. Hasilnya berupa metrik seperti sample time dan error rate, namun tidak menjelaskan *mengapa* aplikasi lambat.
 
-IntelliJ Profiler bekerja dari sisi **dalam** aplikasi — merekam eksekusi nyata di level method/fungsi, menampilkan CPU time, heap memory, dan flame graph. Profiler membantu mengidentifikasi *di mana tepatnya* bottleneck terjadi dalam source code, sehingga optimasi bisa dilakukan secara tepat sasaran.
+IntelliJ Profiler bekerja dari sisi **dalam** aplikasi yang merekam eksekusi nyata di level method/fungsi, menampilkan CPU time, heap memory, dan flame graph. Profiler membantu mengidentifikasi *di mana tepatnya* bottleneck terjadi dalam source code, sehingga optimasi bisa dilakukan secara tepat sasaran.
 
 Keduanya bersifat komplementer: JMeter mengukur *seberapa* lambat, IntelliJ Profiler mengungkap *mengapa* lambat.
 
