@@ -6,6 +6,7 @@ import com.advpro.profiling.tutorial.repository.StudentCourseRepository;
 import com.advpro.profiling.tutorial.repository.StudentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -22,14 +23,17 @@ public class StudentService {
     @Autowired
     private StudentCourseRepository studentCourseRepository;
 
+    @Transactional(readOnly = true)
     public List<StudentCourse> getAllStudentsWithCourses() {
         return studentCourseRepository.findAllWithStudentAndCourse();
     }
 
+    @Transactional(readOnly = true)
     public Optional<Student> findStudentWithHighestGpa() {
         return studentRepository.findFirstByOrderByGpaDesc();
     }
 
+    @Transactional(readOnly = true)
     public String joinStudentNames() {
         List<String> names = studentRepository.findAllStudentNames();
         return String.join(", ", names);
