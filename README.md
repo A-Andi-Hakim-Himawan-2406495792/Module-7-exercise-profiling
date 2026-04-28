@@ -53,7 +53,14 @@
 
 ![all-student-name CLI after](screenshots/all-student-name-after-cli.png)
 
+**Perbandingan:**
+| Metric | Sebelum | Sesudah | Improvement |
+|--------|---------|---------|-------------|
+| Avg Sample Time (ms) | 2847 | 68 | ~98% ✅ |
+| Min Sample Time (ms) | 1209 | 15 | ~99% ✅ |
+| Max Sample Time (ms) | 3673 | 244 | ~93% ✅ |
 
+---
 
 ### Endpoint `/highest-gpa`
 
@@ -65,7 +72,7 @@
 
 #### Hasil GUI (setelah optimasi):
 
-![highest-gpa GUI before](screenshots/highest-gpa-after-gui.png)
+![highest-gpa GUI after](screenshots/highest-gpa-after-gui.png)
 
 #### Hasil Command Line (sebelum optimasi):
 
@@ -96,10 +103,10 @@ Solusi: mengganti looping query dengan satu JOIN FETCH query menggunakan `@Query
 
 ### Endpoint `/all-student-name`
 
-Method `joinStudentNames` mengambil seluruh objek Student ke memory lalu melakukan string concatenation menggunakan `+=` di dalam loop. Ini sangat boros memori karena setiap iterasi membuat objek String baru.
+Method `joinStudentNames` sebelumnya mengambil seluruh objek `Student` ke dalam memori, lalu melakukan penggabungan string menggunakan operator `+=` di dalam loop. Pendekatan ini tidak efisien karena setiap iterasi akan membuat objek `String` baru, sehingga boros memori.
 
-Solusi: mengambil hanya kolom nama langsung dari database menggunakan `@Query("SELECT s.name FROM Student s")` dan menggabungkannya dengan `String.join()`.
-Endpoint ini sudah sangat cepat sejak awal karena hanya mengambil satu kolom (nama), sehingga improvement tidak terlalu signifikan pada pengukuran JMeter. Namun secara kode, penggunaan memori jauh lebih efisien karena tidak lagi membuat objek String baru di setiap iterasi."
+Solusi: mengambil hanya kolom nama langsung dari database menggunakan `@Query("SELECT s.name FROM Student s")` dan menggabungkannya dengan `String.join()`. Hasilnya, rata-rata response time turun dari **2847ms menjadi 68ms (~98% improvement)**.
+
 ---
 
 ### Endpoint `/highest-gpa`
@@ -116,7 +123,7 @@ Solusi: menggunakan derived query `findFirstByOrderByGpaDesc()` yang langsung me
 
 JMeter melakukan performance testing dari sisi **luar** aplikasi — mensimulasikan banyak user yang menghit endpoint secara bersamaan dan mengukur response time serta throughput. Hasilnya berupa metrik seperti sample time dan error rate, namun tidak menjelaskan *mengapa* aplikasi lambat.
 
-IntelliJ Profiler bekerja dari sisi **dalam** aplikasi — merekam eksekusi nyata di level method/fungsi, menampilkan CPU time, heap memory, dan flame graph. Profiler membantu mengidentifikasi *di mana tepatnya* bottleneck terjadi dalam source code, sehingga optimasi bisa dilakukan secara tepat sasaran.
+IntelliJ Profiler bekerja dari sisi **dalam** aplikasi yang merekam eksekusi nyata di level method/fungsi, menampilkan CPU time, heap memory, dan flame graph. Profiler membantu mengidentifikasi *di mana tepatnya* bottleneck terjadi dalam source code, sehingga optimasi bisa dilakukan secara tepat sasaran.
 
 Keduanya bersifat komplementer: JMeter mengukur *seberapa* lambat, IntelliJ Profiler mengungkap *mengapa* lambat.
 
@@ -124,7 +131,7 @@ Keduanya bersifat komplementer: JMeter mengukur *seberapa* lambat, IntelliJ Prof
 
 **2. Bagaimana proses profiling membantu mengidentifikasi dan memahami titik lemah dalam aplikasi?**
 
-Profiling memberikan visibilitas langsung ke dalam eksekusi kode. Melalui flame graph, terlihat bahwa method `getAllStudentsWithCourses` mengonsumsi sebagian besar CPU time. Setelah ditelusuri di Method List dan source code, ditemukan pola N+1 Query — setiap iterasi student memicu satu query tambahan ke database. Tanpa profiling, masalah ini sulit terdeteksi hanya dari melihat kode secara manual.
+Profiling memberikan visibilitas langsung ke dalam eksekusi kode. Melalui flame graph, terlihat bahwa method `getAllStudentsWithCourses` mengonsumsi sebagian besar CPU time. Setelah ditelusuri di Method List dan source code, ditemukan pola N+1 Query yang setiap iterasi student memicu satu query tambahan ke database. Tanpa profiling, masalah ini sulit terdeteksi hanya dari melihat kode secara manual.
 
 ---
 
